@@ -18,6 +18,14 @@ def browser():
     options.add_argument("--headless")  # Ejecuta sin interfaz gráfica
     options.add_argument("--no-sandbox")  # Necesario para algunos entornos
     options.add_argument("--disable-dev-shm-usage")  # Necesario para algunos entornos
+    # Chrome 154+ fuerza HTTPS por defecto en sitios públicos y muestra una advertencia
+    # antes de abrir HTTP. El ALB del taller solo expone HTTP (sin dominio ni certificado
+    # en el Learner Lab), así que se desactiva para probar Staging por HTTP.
+    options.add_argument(
+        "--disable-features=HttpsUpgrades,HttpsFirstModeV2,"
+        "HttpsFirstBalancedModeAutoEnable,HttpsFirstModeV2ForTypicallySecureUsers"
+    )
+    options.add_experimental_option("prefs", {"https_only_mode_enabled": False})
     driver = webdriver.Chrome(options=options)
 
     # Opción 2: Firefox (headless)
@@ -40,6 +48,11 @@ def get_resultado(browser):
 
 # Función de ayuda para encontrar los elementos del formulario
 def find_elements(browser):
+    # Si el formulario no carga, muestra qué página recibió realmente el navegador
+    WebDriverWait(browser, 10).until(
+        EC.presence_of_element_located((By.NAME, "num1")),
+        message=f"No cargó la calculadora: '{browser.title}' en {browser.current_url}",
+    )
     num1_input = browser.find_element(By.NAME, "num1")
     num2_input = browser.find_element(By.NAME, "num2")
     operacion_select = Select(browser.find_element(By.NAME, "operacion"))
